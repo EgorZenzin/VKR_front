@@ -34,12 +34,4 @@ export const getHistory = () =>
 export const getComparisons = () =>
   api.get<ComparisonHistoryItem[]>('/history/comparisons/').then((r) => r.data);
 
-/* ─── Графики (PNG URL) ─── */
-export const chartRouteUrl = (id: number) =>
-  `http://127.0.0.1:8000/chart/route/${id}`;
-export const chartConvergenceUrl = (id: number) =>
-  `http://127.0.0.1:8000/chart/convergence/${id}`;
-export const chartComparisonUrl = (id: number) =>
-  `http://127.0.0.1:8000/chart/comparison/${id}`;
-
 export default api;
