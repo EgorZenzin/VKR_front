@@ -1,18 +1,6 @@
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import type { City } from '../../types';
+import { generateCities } from '../../utils/generators';
 
 interface Props {
   cities: City[];
@@ -23,7 +11,6 @@ export default function TspInput({ cities, onChange }: Props) {
   const [count, setCount] = useState(10);
 
   const addCity = () => onChange([...cities, { x: 0, y: 0 }]);
-
   const removeCity = (i: number) => onChange(cities.filter((_, idx) => idx !== i));
 
   const updateCity = (i: number, field: 'x' | 'y', val: string) => {
@@ -32,77 +19,74 @@ export default function TspInput({ cities, onChange }: Props) {
     onChange(updated);
   };
 
-  const generateRandom = () => {
-    const generated: City[] = Array.from({ length: count }, () => ({
-      x: Math.round(Math.random() * 100),
-      y: Math.round(Math.random() * 100),
-    }));
-    onChange(generated);
-  };
-
   return (
-    <Box>
-      <Typography variant="subtitle1" gutterBottom>
-        Города
-      </Typography>
-      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-        <TextField
-          label="Кол-во"
+    <div>
+      <h3 className="text-sm font-semibold text-slate-300 mb-3">Города</h3>
+      <div className="flex gap-2 mb-3 flex-wrap">
+        <input
           type="number"
-          size="small"
+          min={3}
+          max={50}
           value={count}
-          onChange={(e) => setCount(Number(e.target.value) || 3)}
-          sx={{ width: 100 }}
+          onChange={(e) => setCount(Math.max(3, Math.min(50, Number(e.target.value) || 3)))}
+          className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
         />
-        <Button variant="outlined" onClick={generateRandom}>
+        <button
+          onClick={() => onChange(generateCities(count))}
+          className="px-3 py-1 text-sm rounded bg-slate-600 hover:bg-slate-500 text-white transition-colors"
+        >
           Сгенерировать
-        </Button>
-        <Button variant="outlined" onClick={addCity}>
-          Добавить город
-        </Button>
-      </Box>
-      <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>X</TableCell>
-              <TableCell>Y</TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
+        </button>
+        <button
+          onClick={addCity}
+          className="px-3 py-1 text-sm rounded bg-slate-600 hover:bg-slate-500 text-white transition-colors"
+        >
+          + Город
+        </button>
+      </div>
+      <div className="max-h-64 overflow-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-slate-400 border-b border-slate-700">
+              <th className="text-left py-1 w-10">#</th>
+              <th className="text-left py-1">X</th>
+              <th className="text-left py-1">Y</th>
+              <th className="w-8" />
+            </tr>
+          </thead>
+          <tbody>
             {cities.map((c, i) => (
-              <TableRow key={i}>
-                <TableCell>{i + 1}</TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
+              <tr key={i} className="border-b border-slate-700/50">
+                <td className="py-1 text-slate-500">{i + 1}</td>
+                <td className="py-1">
+                  <input
                     type="number"
                     value={c.x}
                     onChange={(e) => updateCity(i, 'x', e.target.value)}
-                    sx={{ width: 80 }}
+                    className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-0.5 text-sm text-white"
                   />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
+                </td>
+                <td className="py-1">
+                  <input
                     type="number"
                     value={c.y}
                     onChange={(e) => updateCity(i, 'y', e.target.value)}
-                    sx={{ width: 80 }}
+                    className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-0.5 text-sm text-white"
                   />
-                </TableCell>
-                <TableCell>
-                  <IconButton size="small" onClick={() => removeCity(i)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
+                </td>
+                <td className="py-1">
+                  <button
+                    onClick={() => removeCity(i)}
+                    className="text-red-400 hover:text-red-300 text-xs"
+                  >
+                    ✕
+                  </button>
+                </td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </Box>
-    </Box>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

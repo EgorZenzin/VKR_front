@@ -1,18 +1,6 @@
 import { useState } from 'react';
-import {
-  Box,
-  Button,
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
 import type { KnapsackItem } from '../../types';
+import { generateKnapsackItems } from '../../utils/generators';
 
 interface Props {
   items: KnapsackItem[];
@@ -30,7 +18,6 @@ export default function KnapsackInput({
   const [count, setCount] = useState(10);
 
   const addItem = () => onChangeItems([...items, { weight: 1, value: 1 }]);
-
   const removeItem = (i: number) => onChangeItems(items.filter((_, idx) => idx !== i));
 
   const updateItem = (i: number, field: 'weight' | 'value', val: string) => {
@@ -39,86 +26,73 @@ export default function KnapsackInput({
     onChangeItems(updated);
   };
 
-  const generateRandom = () => {
-    const gen: KnapsackItem[] = Array.from({ length: count }, () => ({
-      weight: Math.round(Math.random() * 20 + 1),
-      value: Math.round(Math.random() * 100 + 1),
-    }));
-    onChangeItems(gen);
-    onChangeCapacity(Math.round(gen.reduce((s, i) => s + i.weight, 0) / 2));
+  const handleGenerate = () => {
+    const gen = generateKnapsackItems(count);
+    onChangeItems(gen.items);
+    onChangeCapacity(gen.capacity);
   };
 
   return (
-    <Box>
-      <Typography variant="subtitle1" gutterBottom>
-        Предметы
-      </Typography>
-      <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-        <TextField
-          label="Ёмкость"
-          type="number"
-          size="small"
-          value={capacity}
-          onChange={(e) => onChangeCapacity(Number(e.target.value) || 0)}
-          sx={{ width: 120 }}
-        />
-        <TextField
-          label="Кол-во"
-          type="number"
-          size="small"
-          value={count}
-          onChange={(e) => setCount(Number(e.target.value) || 3)}
-          sx={{ width: 100 }}
-        />
-        <Button variant="outlined" onClick={generateRandom}>
+    <div>
+      <h3 className="text-sm font-semibold text-slate-300 mb-3">Предметы</h3>
+      <div className="flex gap-2 mb-3 flex-wrap items-end">
+        <div>
+          <label className="block text-xs text-slate-400 mb-1">Ёмкость</label>
+          <input
+            type="number"
+            value={capacity}
+            onChange={(e) => onChangeCapacity(Number(e.target.value) || 0)}
+            className="w-24 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1">Кол-во</label>
+          <input
+            type="number"
+            min={3}
+            max={30}
+            value={count}
+            onChange={(e) => setCount(Number(e.target.value) || 3)}
+            className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+          />
+        </div>
+        <button onClick={handleGenerate} className="px-3 py-1 text-sm rounded bg-slate-600 hover:bg-slate-500 text-white transition-colors">
           Сгенерировать
-        </Button>
-        <Button variant="outlined" onClick={addItem}>
-          Добавить предмет
-        </Button>
-      </Box>
-      <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>Вес</TableCell>
-              <TableCell>Ценность</TableCell>
-              <TableCell />
-            </TableRow>
-          </TableHead>
-          <TableBody>
+        </button>
+        <button onClick={addItem} className="px-3 py-1 text-sm rounded bg-slate-600 hover:bg-slate-500 text-white transition-colors">
+          + Предмет
+        </button>
+      </div>
+      <div className="max-h-64 overflow-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-slate-400 border-b border-slate-700">
+              <th className="text-left py-1 w-10">#</th>
+              <th className="text-left py-1">Вес</th>
+              <th className="text-left py-1">Ценность</th>
+              <th className="w-8" />
+            </tr>
+          </thead>
+          <tbody>
             {items.map((item, i) => (
-              <TableRow key={i}>
-                <TableCell>{i + 1}</TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={item.weight}
-                    onChange={(e) => updateItem(i, 'weight', e.target.value)}
-                    sx={{ width: 80 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <TextField
-                    size="small"
-                    type="number"
-                    value={item.value}
-                    onChange={(e) => updateItem(i, 'value', e.target.value)}
-                    sx={{ width: 80 }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <IconButton size="small" onClick={() => removeItem(i)}>
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
+              <tr key={i} className="border-b border-slate-700/50">
+                <td className="py-1 text-slate-500">{i + 1}</td>
+                <td className="py-1">
+                  <input type="number" value={item.weight} onChange={(e) => updateItem(i, 'weight', e.target.value)}
+                    className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-0.5 text-sm text-white" />
+                </td>
+                <td className="py-1">
+                  <input type="number" value={item.value} onChange={(e) => updateItem(i, 'value', e.target.value)}
+                    className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-0.5 text-sm text-white" />
+                </td>
+                <td className="py-1">
+                  <button onClick={() => removeItem(i)} className="text-red-400 hover:text-red-300 text-xs">✕</button>
+                </td>
+              </tr>
             ))}
-          </TableBody>
-        </Table>
-      </Box>
-    </Box>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }

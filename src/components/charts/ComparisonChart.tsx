@@ -5,54 +5,69 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
+  Cell,
+  PieChart,
+  Pie,
+  Legend,
 } from 'recharts';
-import { Box, Typography } from '@mui/material';
-import type { SolveResult } from '../../types';
+import type { LabelValues, SolveResponse } from '../../types';
 
-interface Props {
-  results: SolveResult[];
+const BLUE = '#3B82F6';
+const ML_PURPLE = '#8B5CF6';
+
+interface BarChartProps {
+  title: string;
+  comparison: LabelValues;
+  unit?: string;
+  results?: SolveResponse[];
 }
 
-const COLORS = ['#1976d2', '#f44336', '#4caf50', '#ff9800', '#9c27b0'];
-
-export default function ComparisonChart({ results }: Props) {
-  if (!results || results.length === 0) return null;
-
-  const data = results.map((r) => ({
-    algorithm: r.algorithm,
-    objective: r.objective_value,
-    time: +(r.execution_time * 1000).toFixed(2),
+export function ComparisonBarChart({ title, comparison, unit, results }: BarChartProps) {
+  const data = comparison.labels.map((label, i) => ({
+    name: label,
+    value: comparison.values[i],
+    isML: results ? results[i]?.algorithm_name?.includes('_ml') : false,
   }));
 
   return (
-    <Box>
-      <Typography variant="subtitle2" gutterBottom>
-        Сравнение алгоритмов
-      </Typography>
-      <ResponsiveContainer width="100%" height={350}>
+    <div>
+      <h4 className="text-sm font-semibold text-slate-300 mb-2">{title}</h4>
+      <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="algorithm" />
-          <YAxis yAxisId="left" orientation="left" stroke="#1976d2" />
-          <YAxis yAxisId="right" orientation="right" stroke="#f44336" />
-          <Tooltip />
-          <Legend />
-          <Bar
-            yAxisId="left"
-            dataKey="objective"
-            name="Целевое значение"
-            fill="#1976d2"
-          />
-          <Bar
-            yAxisId="right"
-            dataKey="time"
-            name="Время (мс)"
-            fill="#f44336"
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 12 }} />
+          <YAxis stroke="#94a3b8" />
+          <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }} />
+          <Bar dataKey="value" name={unit || 'Значение'}>
+            {data.map((entry, i) => (
+              <Cell key={i} fill={entry.isML ? ML_PURPLE : BLUE} />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </Box>
+    </div>
+  );
+}
+
+interface PieProps {
+  exact: number;
+  surrogate: number;
+}
+
+export function SurrogateRatioPie({ exact, surrogate }: PieProps) {
+  const data = [
+    { name: 'Точные', value: exact, fill: BLUE },
+    { name: 'Суррогатные', value: surrogate, fill: ML_PURPLE },
+  ];
+
+  return (
+    <ResponsiveContainer width="100%" height={250}>
+      <PieChart>
+        <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label />
+        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }} />
+        <Legend />
+      </PieChart>
+    </ResponsiveContainer>
   );
 }

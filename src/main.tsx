@@ -1,27 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { TasksProvider } from './hooks/useTasks';
 import App from './App';
-
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: { main: '#1976d2' },
-    secondary: { main: '#9c27b0' },
-  },
-  typography: {
-    fontFamily: '"Roboto","Helvetica","Arial",sans-serif',
-  },
-});
+import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
+    <BrowserRouter>
+      <TasksProvider>
         <App />
-      </BrowserRouter>
-    </ThemeProvider>
+      </TasksProvider>
+    </BrowserRouter>
   </React.StrictMode>,
 );

@@ -1,131 +1,82 @@
-import { useState, useCallback, useEffect } from 'react';
-import {
-  Typography,
-  Box,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Paper,
-  Alert,
-  CircularProgress,
-  Checkbox,
-  FormGroup,
-  FormControlLabel,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Slider,
-  Divider,
-} from '@mui/material';
-import type { SelectChangeEvent } from '@mui/material';
-import {
-  PROBLEMS,
-  PROBLEM_MAP,
-  PARAM_DEFS,
-  ALGO_PARAMS,
-} from '../constants/problems';
-import type {
-  ProblemType,
-  City,
-  KnapsackItem,
-  FlowEdge,
-  InputData,
-  SolveResult,
-} from '../types';
+import { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { useTasks } from '../hooks/useTasks';
 import { compare } from '../api';
-
+import type { CompareResponse } from '../types';
+import Loader from '../components/Loader';
 import TspInput from '../components/inputs/TspInput';
 import KnapsackInput from '../components/inputs/KnapsackInput';
 import AssignmentInput from '../components/inputs/AssignmentInput';
-import GraphColoringInput from '../components/inputs/GraphColoringInput';
-import MaxFlowInput from '../components/inputs/MaxFlowInput';
-import ComparisonChart from '../components/charts/ComparisonChart';
+import AlgorithmParams from '../components/inputs/AlgorithmParams';
+import ConvergenceChart from '../components/charts/ConvergenceChart';
+import { ComparisonBarChart, SurrogateRatioPie } from '../components/charts/ComparisonChart';
+import { generateCities, generateKnapsackItems, generateCostMatrix } from '../utils/generators';
 
 export default function ComparePage() {
-  const [problemType, setProblemType] = useState<ProblemType>('tsp');
+  const { taskName } = useParams<{ taskName: string }>();
+  const [searchParams] = useSearchParams();
+  const { getTask, loading: tasksLoading } = useTasks();
+  const task = getTask(taskName || '');
+
   const [selectedAlgos, setSelectedAlgos] = useState<string[]>([]);
-  const [params, setParams] = useState<Record<string, number>>({});
-  const [results, setResults] = useState<SolveResult[]>([]);
+  const [algoParams, setAlgoParams] = useState<Record<string, Record<string, number>>>({});
+  const [result, setResult] = useState<CompareResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const problem = PROBLEM_MAP[problemType];
+  // Input data state
+  const [cities, setCities] = useState(() => generateCities(10));
+  const [knapsackData] = useState(() => generateKnapsackItems(8));
+  const [knapsackItems, setKnapsackItems] = useState(knapsackData.items);
+  const [capacity, setCapacity] = useState(knapsackData.capacity);
+  const [costMatrix, setCostMatrix] = useState(() => generateCostMatrix(4));
 
-  // Input state
-  const [cities, setCities] = useState<City[]>(() =>
-    Array.from({ length: 5 }, () => ({
-      x: Math.round(Math.random() * 100),
-      y: Math.round(Math.random() * 100),
-    })),
-  );
-  const [knapsackItems, setKnapsackItems] = useState<KnapsackItem[]>([
-    { weight: 10, value: 60 },
-    { weight: 20, value: 100 },
-    { weight: 30, value: 120 },
-  ]);
-  const [capacity, setCapacity] = useState(50);
-  const [costMatrix, setCostMatrix] = useState<number[][]>([
-    [9, 2, 7],
-    [6, 4, 3],
-    [5, 8, 1],
-  ]);
-  const [gcVertices, setGcVertices] = useState(5);
-  const [gcEdges, setGcEdges] = useState<number[][]>([
-    [0, 1], [1, 2], [2, 3], [3, 4], [0, 4],
-  ]);
-  const [mfVertices, setMfVertices] = useState(4);
-  const [mfEdges, setMfEdges] = useState<FlowEdge[]>([
-    { from: 0, to: 1, capacity: 10 },
-    { from: 0, to: 2, capacity: 8 },
-    { from: 1, to: 3, capacity: 5 },
-    { from: 2, to: 3, capacity: 10 },
-  ]);
-  const [mfSource, setMfSource] = useState(0);
-  const [mfSink, setMfSink] = useState(3);
-
+  // Apply preset from URL
   useEffect(() => {
-    setSelectedAlgos([]);
-    setResults([]);
-    // Collect all unique param keys for all algorithms in this problem
-    const allKeys = new Set<string>();
-    problem.algorithms.forEach((a) => {
-      (ALGO_PARAMS[a.name] ?? []).forEach((k) => allKeys.add(k));
-    });
-    const initial: Record<string, number> = {};
-    allKeys.forEach((k) => {
-      initial[k] = PARAM_DEFS[k]?.default ?? 100;
-    });
-    setParams(initial);
-  }, [problemType]);
-
-  const buildInputData = useCallback((): InputData => {
-    switch (problemType) {
-      case 'tsp':
-        return { cities };
-      case 'knapsack':
-        return { items: knapsackItems, capacity };
-      case 'assignment':
-        return { cost_matrix: costMatrix };
-      case 'graph_coloring':
-        return { num_vertices: gcVertices, edges: gcEdges };
-      case 'max_flow':
-        return {
-          num_vertices: mfVertices,
-          edges: mfEdges,
-          source: mfSource,
-          sink: mfSink,
-        };
+    if (!task) return;
+    const preset = searchParams.get('preset');
+    if (preset === 'ml') {
+      const mlAlgos = task.algorithms
+        .filter((a) => a.name === 'genetic' || a.name === 'genetic_ml')
+        .map((a) => a.name);
+      setSelectedAlgos(mlAlgos);
     }
-  }, [problemType, cities, knapsackItems, capacity, costMatrix, gcVertices, gcEdges, mfVertices, mfEdges, mfSource, mfSink]);
+  }, [task, searchParams]);
+
+  const buildInputData = () => {
+    switch (taskName) {
+      case 'tsp': return { cities };
+      case 'knapsack': return { items: knapsackItems, capacity };
+      case 'assignment': return { cost_matrix: costMatrix };
+      default: return {};
+    }
+  };
 
   const toggleAlgo = (name: string) => {
     setSelectedAlgos((prev) =>
       prev.includes(name) ? prev.filter((a) => a !== name) : [...prev, name],
     );
+  };
+
+  const selectPreset = (preset: 'all' | 'ml' | 'classic') => {
+    if (!task) return;
+    switch (preset) {
+      case 'all':
+        setSelectedAlgos(task.algorithms.map((a) => a.name));
+        break;
+      case 'ml':
+        setSelectedAlgos(
+          task.algorithms
+            .filter((a) => a.name === 'genetic' || a.name === 'genetic_ml')
+            .map((a) => a.name),
+        );
+        break;
+      case 'classic':
+        setSelectedAlgos(
+          task.algorithms.filter((a) => !a.name.includes('_ml')).map((a) => a.name),
+        );
+        break;
+    }
   };
 
   const handleCompare = async () => {
@@ -135,80 +86,89 @@ export default function ComparePage() {
     }
     setLoading(true);
     setError('');
+    setResult(null);
     try {
+      const params: Record<string, Record<string, number>> = {};
+      selectedAlgos.forEach((a) => {
+        if (algoParams[a] && Object.keys(algoParams[a]).length > 0) {
+          params[a] = algoParams[a];
+        }
+      });
       const res = await compare({
-        problem_type: problemType,
+        task_name: taskName!,
         algorithms: selectedAlgos,
         input_data: buildInputData(),
-        params,
+        params: Object.keys(params).length > 0 ? params : undefined,
       });
-      setResults(res.results);
+      setResult(res);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Ошибка сравнения';
-      setError(msg);
+      const e = err as { response?: { data?: { detail?: string } }; message?: string };
+      setError(e?.response?.data?.detail || e?.message || 'Ошибка сравнения');
     } finally {
       setLoading(false);
     }
   };
 
-  // Collect parameter keys for selected algorithms
-  const paramKeys = Array.from(
-    new Set(selectedAlgos.flatMap((a) => ALGO_PARAMS[a] ?? [])),
-  );
+  if (tasksLoading) return <Loader />;
+  if (!task) return <div className="text-red-400">Задача «{taskName}» не найдена</div>;
+
+  const mlResults = result?.results.filter((r) => r.ml_metrics) || [];
 
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Сравнение алгоритмов
-      </Typography>
-
-      {/* Problem selection */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <FormControl fullWidth size="small">
-          <InputLabel>Задача</InputLabel>
-          <Select
-            value={problemType}
-            label="Задача"
-            onChange={(e: SelectChangeEvent) =>
-              setProblemType(e.target.value as ProblemType)
-            }
-          >
-            {PROBLEMS.map((p) => (
-              <MenuItem key={p.type} value={p.type}>
-                {p.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Paper>
+    <div className="max-w-5xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold">
+        Сравнение: {task.display_name}
+      </h1>
 
       {/* Algorithm selection */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="subtitle1" gutterBottom>
-          Алгоритмы
-        </Typography>
-        <FormGroup row>
-          {problem.algorithms.map((a) => (
-            <FormControlLabel
-              key={a.name}
-              control={
-                <Checkbox
-                  checked={selectedAlgos.includes(a.name)}
+      <div className="bg-slate-800 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-slate-300">Алгоритмы</h3>
+          <div className="flex gap-2">
+            <button onClick={() => selectPreset('all')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">
+              Все
+            </button>
+            <button onClick={() => selectPreset('ml')} className="px-2 py-1 text-xs rounded bg-violet-700/50 hover:bg-violet-700 text-violet-300 transition-colors">
+              ML vs Без ML
+            </button>
+            <button onClick={() => selectPreset('classic')} className="px-2 py-1 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-300 transition-colors">
+              Только классические
+            </button>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          {task.algorithms.map((a) => {
+            const isML = a.name.includes('_ml');
+            const checked = selectedAlgos.includes(a.name);
+            return (
+              <label
+                key={a.name}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer border transition-colors ${
+                  checked
+                    ? isML
+                      ? 'bg-violet-600/20 border-violet-500 text-violet-300'
+                      : 'bg-blue-600/20 border-blue-500 text-blue-300'
+                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
                   onChange={() => toggleAlgo(a.name)}
+                  className="accent-blue-500"
                 />
-              }
-              label={a.label}
-            />
-          ))}
-        </FormGroup>
-      </Paper>
+                {isML && <span>🧠</span>}
+                <span className="text-sm">{a.display_name}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Input data */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        {problemType === 'tsp' && (
-          <TspInput cities={cities} onChange={setCities} />
-        )}
-        {problemType === 'knapsack' && (
+      <div className="bg-slate-800 rounded-lg p-4">
+        {taskName === 'tsp' && <TspInput cities={cities} onChange={setCities} />}
+        {taskName === 'knapsack' && (
           <KnapsackInput
             items={knapsackItems}
             capacity={capacity}
@@ -216,111 +176,179 @@ export default function ComparePage() {
             onChangeCapacity={setCapacity}
           />
         )}
-        {problemType === 'assignment' && (
+        {taskName === 'assignment' && (
           <AssignmentInput matrix={costMatrix} onChange={setCostMatrix} />
         )}
-        {problemType === 'graph_coloring' && (
-          <GraphColoringInput
-            numVertices={gcVertices}
-            edges={gcEdges}
-            onChangeVertices={setGcVertices}
-            onChangeEdges={setGcEdges}
-          />
-        )}
-        {problemType === 'max_flow' && (
-          <MaxFlowInput
-            numVertices={mfVertices}
-            edges={mfEdges}
-            source={mfSource}
-            sink={mfSink}
-            onChangeVertices={setMfVertices}
-            onChangeEdges={setMfEdges}
-            onChangeSource={setMfSource}
-            onChangeSink={setMfSink}
-          />
-        )}
-      </Paper>
+      </div>
 
-      {/* Params */}
-      {paramKeys.length > 0 && (
-        <Paper sx={{ p: 2, mb: 2 }}>
-          <Typography variant="subtitle1" gutterBottom>
-            Параметры
-          </Typography>
-          {paramKeys.map((key) => {
-            const def = PARAM_DEFS[key];
-            if (!def) return null;
-            return (
-              <Box key={key} sx={{ mb: 2 }}>
-                <Typography variant="body2" gutterBottom>
-                  {def.label}: {params[key] ?? def.default}
-                </Typography>
-                <Slider
-                  value={params[key] ?? def.default}
-                  min={def.min}
-                  max={def.max}
-                  step={def.step}
-                  onChange={(_, val) =>
-                    setParams((p) => ({ ...p, [key]: val as number }))
-                  }
-                  valueLabelDisplay="auto"
-                />
-              </Box>
-            );
-          })}
-        </Paper>
-      )}
+      {/* Per-algorithm params */}
+      {selectedAlgos.map((algoName) => (
+        <div key={algoName}>
+          <p className="text-xs text-slate-500 mb-1">
+            {task.algorithms.find((a) => a.name === algoName)?.display_name}
+          </p>
+          <AlgorithmParams
+            algorithm={algoName}
+            params={algoParams[algoName] || {}}
+            onChange={(p) => setAlgoParams((prev) => ({ ...prev, [algoName]: p }))}
+          />
+        </div>
+      ))}
 
       {/* Compare button */}
-      <Box sx={{ mb: 2 }}>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleCompare}
-          disabled={loading || selectedAlgos.length < 2}
-          startIcon={loading ? <CircularProgress size={20} /> : undefined}
-        >
-          {loading ? 'Сравниваю...' : 'Сравнить'}
-        </Button>
-      </Box>
+      <button
+        onClick={handleCompare}
+        disabled={loading || selectedAlgos.length < 2}
+        className="px-6 py-3 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+      >
+        {loading ? 'Сравниваю...' : 'Сравнить'}
+      </button>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <div className="bg-red-900/50 border border-red-700 text-red-300 rounded-lg p-4">
           {error}
-        </Alert>
+        </div>
       )}
+
+      {loading && <Loader />}
 
       {/* Results */}
-      {results.length > 0 && (
-        <Paper sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Результаты сравнения
-          </Typography>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Алгоритм</TableCell>
-                <TableCell align="right">Целевое значение</TableCell>
-                <TableCell align="right">Время (мс)</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {results.map((r, i) => (
-                <TableRow key={i}>
-                  <TableCell>{r.algorithm}</TableCell>
-                  <TableCell align="right">{r.objective_value}</TableCell>
-                  <TableCell align="right">
-                    {(r.execution_time * 1000).toFixed(2)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {result && (
+        <div className="space-y-6">
+          {/* Results table */}
+          <div className="bg-slate-800 rounded-lg p-4 overflow-auto">
+            <h3 className="text-lg font-semibold mb-3">Результаты</h3>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-slate-400 border-b border-slate-700">
+                  <th className="text-left py-2">Алгоритм</th>
+                  <th className="text-right py-2">Значение ЦФ</th>
+                  <th className="text-right py-2">Время</th>
+                  <th className="text-right py-2">Итерации</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.results.map((r, i) => {
+                  const isML = r.algorithm_name?.includes('_ml');
+                  return (
+                    <tr
+                      key={i}
+                      className={`border-b border-slate-700/50 ${
+                        isML ? 'bg-violet-600/10' : ''
+                      }`}
+                    >
+                      <td className="py-2">
+                        {isML && <span className="mr-1">🧠</span>}
+                        {r.display_name}
+                      </td>
+                      <td className="py-2 text-right font-mono">
+                        {r.objective_value?.toFixed(4)}
+                      </td>
+                      <td className="py-2 text-right font-mono">
+                        {r.execution_time < 1
+                          ? `${(r.execution_time * 1000).toFixed(1)} мс`
+                          : `${r.execution_time.toFixed(3)} с`}
+                      </td>
+                      <td className="py-2 text-right font-mono">
+                        {r.iterations ?? '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
 
-          <Divider sx={{ my: 2 }} />
-          <ComparisonChart results={results} />
-        </Paper>
+          {/* ML metrics table */}
+          {mlResults.length > 0 && (
+            <div className="bg-slate-800 rounded-lg p-4 border border-violet-600/30 overflow-auto">
+              <h3 className="text-lg font-semibold mb-3">🧠 ML-метрики</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-slate-400 border-b border-slate-700">
+                    <th className="text-left py-2">Алгоритм</th>
+                    <th className="text-right py-2">Точные оценки</th>
+                    <th className="text-right py-2">Суррогатные</th>
+                    <th className="text-right py-2">R²</th>
+                    <th className="text-right py-2">Обуч. сэмплов</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mlResults.map((r, i) => (
+                    <tr key={i} className="border-b border-slate-700/50">
+                      <td className="py-2">{r.display_name}</td>
+                      <td className="py-2 text-right font-mono">
+                        {r.ml_metrics!.exact_evaluations}
+                      </td>
+                      <td className="py-2 text-right font-mono">
+                        {r.ml_metrics!.surrogate_evaluations}
+                      </td>
+                      <td className="py-2 text-right font-mono">
+                        {r.ml_metrics!.surrogate_accuracy_r2.toFixed(3)}
+                      </td>
+                      <td className="py-2 text-right font-mono">
+                        {r.ml_metrics!.training_samples}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Convergence chart */}
+          {result.comparison_charts?.convergence?.length > 0 && (
+            <div className="bg-slate-800 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-3">Сходимость</h3>
+              <ConvergenceChart series={result.comparison_charts.convergence} />
+            </div>
+          )}
+
+          {/* Bar charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {result.comparison_charts?.time_comparison && (
+              <div className="bg-slate-800 rounded-lg p-4">
+                <ComparisonBarChart
+                  title="Сравнение времени"
+                  comparison={result.comparison_charts.time_comparison}
+                  unit="Время (с)"
+                  results={result.results}
+                />
+              </div>
+            )}
+            {result.comparison_charts?.quality_comparison && (
+              <div className="bg-slate-800 rounded-lg p-4">
+                <ComparisonBarChart
+                  title="Сравнение качества"
+                  comparison={result.comparison_charts.quality_comparison}
+                  unit="Значение ЦФ"
+                  results={result.results}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Surrogate pie charts */}
+          {mlResults.length > 0 && (
+            <div className="bg-slate-800 rounded-lg p-4 border border-violet-600/30">
+              <h3 className="text-lg font-semibold mb-3">Доля суррогатных оценок</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {mlResults.map((r) => (
+                  <div key={r.algorithm_name}>
+                    <p className="text-sm text-slate-400 text-center mb-2">
+                      {r.display_name}
+                    </p>
+                    <SurrogateRatioPie
+                      exact={r.ml_metrics!.exact_evaluations}
+                      surrogate={r.ml_metrics!.surrogate_evaluations}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
-    </Box>
+    </div>
   );
 }

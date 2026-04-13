@@ -6,53 +6,38 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
 } from 'recharts';
-import { Box, Typography } from '@mui/material';
 import type { City } from '../../types';
 
 interface Props {
-  cities: City[];
-  route?: number[];
+  data: Record<string, unknown>;
 }
 
-export default function TspChart({ cities, route }: Props) {
-  const routeData =
-    route && route.length > 0
-      ? [...route, route[0]].map((idx) => cities[idx]).filter(Boolean)
-      : [];
+export default function TspChart({ data }: Props) {
+  const cities = (data.cities || data.route_coordinates || []) as City[];
+  const routeCoords = (data.route_coordinates || []) as City[];
+
+  const displayData =
+    routeCoords.length > 0
+      ? [...routeCoords, routeCoords[0]]
+      : cities;
 
   return (
-    <Box>
-      <Typography variant="subtitle2" gutterBottom>
-        Маршрут
-      </Typography>
-      <ResponsiveContainer width="100%" height={350}>
-        {routeData.length > 0 ? (
-          <LineChart data={routeData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="x" type="number" name="X" />
-            <YAxis dataKey="y" type="number" name="Y" />
-            <Tooltip />
-            <Line
-              type="linear"
-              dataKey="y"
-              stroke="#1976d2"
-              dot={{ r: 5, fill: '#f44336' }}
-              strokeWidth={2}
-            />
-          </LineChart>
-        ) : (
-          <ScatterChart>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="x" type="number" name="X" />
-            <YAxis dataKey="y" type="number" name="Y" />
-            <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-            <Scatter data={cities} fill="#1976d2" />
-          </ScatterChart>
-        )}
-      </ResponsiveContainer>
-    </Box>
+    <ResponsiveContainer width="100%" height={350}>
+      <ScatterChart>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+        <XAxis dataKey="x" type="number" name="X" stroke="#94a3b8" />
+        <YAxis dataKey="y" type="number" name="Y" stroke="#94a3b8" />
+        <Tooltip
+          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
+          cursor={{ strokeDasharray: '3 3' }}
+        />
+        <Scatter
+          data={displayData}
+          fill="#3B82F6"
+          line={routeCoords.length > 0 ? { stroke: '#3B82F6', strokeWidth: 2 } : false}
+        />
+      </ScatterChart>
+    </ResponsiveContainer>
   );
 }

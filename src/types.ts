@@ -1,18 +1,18 @@
-/* ───────── Общие ───────── */
-export type ProblemType = 'tsp' | 'assignment' | 'knapsack' | 'graph_coloring' | 'max_flow';
+/* ───── API типы ───── */
 
 export interface AlgorithmInfo {
   name: string;
-  label: string;
+  display_name: string;
 }
 
-export interface ProblemInfo {
-  type: ProblemType;
-  label: string;
+export interface TaskInfo {
+  name: string;
+  display_name: string;
+  description: string;
+  optimization: 'minimize' | 'maximize';
   algorithms: AlgorithmInfo[];
 }
 
-/* ───────── Входные данные ───────── */
 export interface City {
   x: number;
   y: number;
@@ -23,70 +23,77 @@ export interface KnapsackItem {
   value: number;
 }
 
-export interface FlowEdge {
-  from: number;
-  to: number;
-  capacity: number;
-}
+/* ───── Запросы ───── */
 
-export type InputData =
-  | { cities: City[] }
-  | { cost_matrix: number[][] }
-  | { items: KnapsackItem[]; capacity: number }
-  | { num_vertices: number; edges: number[][] }
-  | { num_vertices: number; edges: FlowEdge[]; source: number; sink: number };
-
-/* ───────── Запросы ───────── */
 export interface SolveRequest {
-  problem_type: ProblemType;
+  task_name: string;
   algorithm: string;
-  input_data: InputData;
-  params: Record<string, number>;
+  input_data: Record<string, unknown>;
+  params?: Record<string, number>;
 }
 
 export interface CompareRequest {
-  problem_type: ProblemType;
+  task_name: string;
   algorithms: string[];
-  input_data: InputData;
-  params: Record<string, number>;
+  input_data: Record<string, unknown>;
+  params?: Record<string, Record<string, number>>;
 }
 
-/* ───────── Ответы ───────── */
-export interface SolveResult {
-  id?: number;
-  problem_type: string;
-  algorithm: string;
-  result: unknown;
+/* ───── Ответы ───── */
+
+export interface MLMetrics {
+  ml_used: boolean;
+  surrogate_model: string;
+  exact_evaluations: number;
+  surrogate_evaluations: number;
+  surrogate_accuracy_r2: number;
+  warmup_generations: number;
+  surrogate_ratio: number;
+  training_samples: number;
+}
+
+export interface SolveResponse {
+  task_name: string;
+  task_display_name: string;
+  algorithm_name: string;
+  display_name: string;
+  input_data: Record<string, unknown>;
+  solution: unknown;
   objective_value: number;
   execution_time: number;
-  params: Record<string, number>;
-  created_at?: string;
+  iterations: number;
+  convergence_history: number[];
+  visualization_data: Record<string, unknown> | null;
+  ml_metrics: MLMetrics | null;
 }
 
-export interface CompareResult {
-  id?: number;
-  problem_type: string;
+export interface ConvergencePoint {
+  iteration: number;
+  value: number;
+}
+
+export interface ConvergenceSeries {
+  algorithm_name: string;
+  display_name: string;
+  data: ConvergencePoint[];
+}
+
+export interface LabelValues {
+  labels: string[];
+  values: number[];
+}
+
+export interface ComparisonCharts {
+  convergence: ConvergenceSeries[];
+  time_comparison: LabelValues;
+  quality_comparison: LabelValues;
+}
+
+export interface CompareResponse {
+  task_name: string;
+  task_display_name: string;
+  input_data: Record<string, unknown>;
   algorithms: string[];
-  results: SolveResult[];
-  created_at?: string;
-}
-
-export interface HistoryItem {
-  id: number;
-  problem_type: string;
-  algorithm: string;
-  objective_value: number;
-  execution_time: number;
-  created_at: string;
-  params: Record<string, number>;
-  input_data: InputData;
-  result: unknown;
-}
-
-export interface ComparisonHistoryItem {
-  id: number;
-  problem_type: string;
-  algorithms: string[];
-  results: SolveResult[];
-  created_at: string;
+  results: SolveResponse[];
+  comparison_charts: ComparisonCharts;
 }
