@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
-import { solve } from '../api';
-import type { SolveResponse } from '../types';
+import { solveTask, getTaskAlgorithms } from '../api';
+import type { SolveResponse, AlgorithmInfo } from '../types';
 import Loader from '../components/Loader';
 import TspInput from '../components/inputs/TspInput';
 import KnapsackInput from '../components/inputs/KnapsackInput';
@@ -10,11 +10,13 @@ import AssignmentInput from '../components/inputs/AssignmentInput';
 import AlgorithmParams from '../components/inputs/AlgorithmParams';
 import ResultCard from '../components/results/ResultCard';
 import MLMetricsCard from '../components/results/MLMetrics';
+import SolveInterpretation from '../components/results/SolveInterpretation';
 import ConvergenceChart from '../components/charts/ConvergenceChart';
 import TspChart from '../components/charts/TspChart';
 import KnapsackChart from '../components/charts/KnapsackChart';
 import AssignmentVisualization from '../components/charts/AssignmentVisualization';
 import { generateCities, generateKnapsackItems, generateCostMatrix } from '../utils/generators';
+import { isMlAlgorithm } from '../utils/algorithms';
 
 export default function SolvePage() {
   const { taskName } = useParams<{ taskName: string }>();
@@ -26,6 +28,23 @@ export default function SolvePage() {
   const [result, setResult] = useState<SolveResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [algorithms, setAlgorithms] = useState<AlgorithmInfo[]>([]);
+  const [algosLoading, setAlgosLoading] = useState(false);
+
+  // Динамическая загрузка списка алгоритмов конкретной задачи через
+  // GET /tasks/{task_name}/algorithms. В случае ошибки используем список
+  // из метаданных задачи как запасной вариант.
+  useEffect(() => {
+    if (!taskName) return;
+    setAlgosLoading(true);
+    getTaskAlgorithms(taskName)
+      .then(setAlgorithms)
+      .catch(() => setAlgorithms(task?.algorithms ?? []))
+      .finally(() => setAlgosLoading(false));
+    setAlgorithm('');
+    setParams({});
+    setResult(null);
+  }, [taskName, task]);
 
   // Input data state
   const [cities, setCities] = useState(() => generateCities(10));
@@ -56,7 +75,7 @@ export default function SolvePage() {
     setError('');
     setResult(null);
     try {
-      const res = await solve({
+      const res = await solveTask({
         task_name: taskName!,
         algorithm,
         input_data: buildInputData(),
@@ -74,6 +93,8 @@ export default function SolvePage() {
   if (tasksLoading) return <Loader />;
   if (!task) return <div className="text-red-400">Задача «{taskName}» не найдена</div>;
 
+  const isMlSelected = isMlAlgorithm(algorithm);
+
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
@@ -85,21 +106,33 @@ export default function SolvePage() {
 
       {/* Algorithm select */}
       <div className="bg-slate-800 rounded-lg p-4">
-        <label className="block text-sm text-slate-400 mb-2">Алгоритм</label>
+        <label className="block text-sm text-slate-400 mb-2">
+          Алгоритм{algosLoading && ' (загрузка...)'}
+        </label>
         <select
           className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
           value={algorithm}
           onChange={(e) => setAlgorithm(e.target.value)}
+          disabled={algosLoading}
         >
           <option value="">— Выберите алгоритм —</option>
-          {task.algorithms.map((a) => (
-            <option key={a.name} value={a.name}>
-              {a.name.includes('_ml') ? '🧠 ' : ''}
-              {a.display_name}
-              {a.name.includes('_ml') ? ' [ML]' : ''}
-            </option>
-          ))}
+          {algorithms.map((a) => {
+            const ml = isMlAlgorithm(a.name);
+            return (
+              <option key={a.name} value={a.name}>
+                {ml ? '🧠 ' : ''}
+                {a.display_name}
+                {ml ? ' [ML]' : ''}
+              </option>
+            );
+          })}
         </select>
+        {isMlSelected && (
+          <p className="mt-2 text-xs text-violet-300">
+            🧠 Выбран ML-усиленный алгоритм — параметры суррогатной модели
+            доступны ниже.
+          </p>
+        )}
       </div>
 
       {/* Input data */}
@@ -151,11 +184,16 @@ export default function SolvePage() {
         <div className="space-y-6">
           <ResultCard result={result} />
 
+          <SolveInterpretation
+            result={result}
+            optimization={task.optimization}
+          />
+
           {result.ml_metrics && <MLMetricsCard metrics={result.ml_metrics} />}
 
           {result.convergence_history?.length > 0 && (
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-3">График сходимости</h3>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <h3 className="text-lg font-semibold mb-3 text-slate-800">График сходимости</h3>
               <ConvergenceChart
                 data={result.convergence_history.map((v, i) => ({
                   iteration: i,
@@ -167,15 +205,15 @@ export default function SolvePage() {
 
           {/* Task-specific visualization */}
           {taskName === 'tsp' && result.visualization_data != null ? (
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-3">Маршрут</h3>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <h3 className="text-lg font-semibold mb-3 text-slate-800">Маршрут</h3>
               <TspChart data={result.visualization_data} />
             </div>
           ) : null}
 
           {taskName === 'knapsack' && result.solution != null ? (
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-3">Рюкзак</h3>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <h3 className="text-lg font-semibold mb-3 text-slate-800">Рюкзак</h3>
               <KnapsackChart
                 items={knapsackItems}
                 capacity={capacity}
@@ -185,8 +223,8 @@ export default function SolvePage() {
           ) : null}
 
           {taskName === 'assignment' && result.solution != null ? (
-            <div className="bg-slate-800 rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-3">Назначения</h3>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <h3 className="text-lg font-semibold mb-3 text-slate-800">Назначения</h3>
               <AssignmentVisualization
                 matrix={costMatrix}
                 solution={result.solution as number[]}

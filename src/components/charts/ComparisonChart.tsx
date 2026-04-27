@@ -32,13 +32,13 @@ export function ComparisonBarChart({ title, comparison, unit, results }: BarChar
 
   return (
     <div>
-      <h4 className="text-sm font-semibold text-slate-300 mb-2">{title}</h4>
+      <h4 className="text-sm font-semibold text-slate-700 mb-2">{title}</h4>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="name" stroke="#94a3b8" tick={{ fontSize: 12 }} />
-          <YAxis stroke="#94a3b8" />
-          <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <XAxis dataKey="name" stroke="#64748b" tick={{ fontSize: 12 }} />
+          <YAxis stroke="#64748b" />
+          <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#1e293b' }} />
           <Bar dataKey="value" name={unit || 'Значение'}>
             {data.map((entry, i) => (
               <Cell key={i} fill={entry.isML ? ML_PURPLE : BLUE} />
@@ -65,7 +65,7 @@ export function SurrogateRatioPie({ exact, surrogate }: PieProps) {
     <ResponsiveContainer width="100%" height={250}>
       <PieChart>
         <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label />
-        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }} />
+        <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#1e293b' }} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>

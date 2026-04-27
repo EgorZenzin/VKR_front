@@ -38,10 +38,10 @@ export default function ConvergenceChart(props: Props) {
     return (
       <ResponsiveContainer width="100%" height={350}>
         <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-          <XAxis dataKey="iteration" stroke="#94a3b8" />
-          <YAxis stroke="#94a3b8" />
-          <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+          <XAxis dataKey="iteration" stroke="#64748b" />
+          <YAxis stroke="#64748b" />
+          <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#1e293b' }} />
           <Legend />
           {props.series.map((s, i) => (
             <Line
@@ -65,10 +65,10 @@ export default function ConvergenceChart(props: Props) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={props.data}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-        <XAxis dataKey="iteration" stroke="#94a3b8" />
-        <YAxis stroke="#94a3b8" />
-        <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }} />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+        <XAxis dataKey="iteration" stroke="#64748b" />
+        <YAxis stroke="#64748b" />
+        <Tooltip contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#1e293b' }} />
         <Line type="monotone" dataKey="value" stroke="#8B5CF6" dot={false} strokeWidth={2} />
       </LineChart>
     </ResponsiveContainer>

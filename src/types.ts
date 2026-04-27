@@ -41,18 +41,24 @@ export interface CompareRequest {
 
 /* ───── Ответы ───── */
 
-export interface MLMetrics {
-  ml_used: boolean;
-  surrogate_model: string;
-  exact_evaluations: number;
-  surrogate_evaluations: number;
-  surrogate_accuracy_r2: number;
-  warmup_generations: number;
-  surrogate_ratio: number;
-  training_samples: number;
+/**
+ * Метрики ML — структура динамическая, зависит от backend.
+ * Известные поля приведены как опциональные подсказки для UI,
+ * но фронт обязан корректно отображать любые ключи, пришедшие от API.
+ */
+export interface MLMetrics extends Record<string, unknown> {
+  ml_used?: boolean;
+  surrogate_model?: string;
+  exact_evaluations?: number;
+  surrogate_evaluations?: number;
+  surrogate_accuracy_r2?: number;
+  warmup_generations?: number;
+  surrogate_ratio?: number;
+  training_samples?: number;
+  optimality_guaranteed?: boolean;
 }
 
-export interface SolveResponse {
+export interface AlgorithmResultResponse {
   task_name: string;
   task_display_name: string;
   algorithm_name: string;
@@ -66,6 +72,8 @@ export interface SolveResponse {
   visualization_data: Record<string, unknown> | null;
   ml_metrics: MLMetrics | null;
 }
+
+export type SolveResponse = AlgorithmResultResponse;
 
 export interface ConvergencePoint {
   iteration: number;
@@ -94,6 +102,6 @@ export interface CompareResponse {
   task_display_name: string;
   input_data: Record<string, unknown>;
   algorithms: string[];
-  results: SolveResponse[];
+  results: AlgorithmResultResponse[];
   comparison_charts: ComparisonCharts;
 }

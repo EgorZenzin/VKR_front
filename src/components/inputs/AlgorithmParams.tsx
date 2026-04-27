@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { baseAlgorithmName, isMlAlgorithm } from '../../utils/algorithms';
 
 const PARAM_DEFS: Record<string, { label: string; default: number; min: number; max: number; step: number }> = {
   generations: { label: 'Поколения', default: 200, min: 50, max: 1000, step: 10 },
@@ -11,14 +12,21 @@ const PARAM_DEFS: Record<string, { label: string; default: number; min: number; 
   cooling_rate: { label: 'Скорость охлаждения', default: 0.995, min: 0.9, max: 0.9999, step: 0.0001 },
 };
 
+const BASE_PARAMS: Record<string, string[]> = {
+  genetic: ['generations', 'population_size', 'mutation_rate'],
+  simulated_annealing: ['initial_temp', 'cooling_rate'],
+};
+
+const ML_EXTRA_PARAMS = ['warmup_generations', 'surrogate_ratio', 'retrain_every'];
+
 function getAlgoParamKeys(algo: string): string[] {
-  if (algo.includes('_ml'))
-    return ['generations', 'population_size', 'mutation_rate', 'warmup_generations', 'surrogate_ratio', 'retrain_every'];
-  if (algo === 'genetic')
-    return ['generations', 'population_size', 'mutation_rate'];
-  if (algo === 'simulated_annealing')
-    return ['initial_temp', 'cooling_rate'];
-  return [];
+  const base = baseAlgorithmName(algo);
+  const baseKeys = BASE_PARAMS[base] ?? [];
+  // ML-расширения имеют смысл только для итеративных базовых алгоритмов
+  if (isMlAlgorithm(algo) && baseKeys.length > 0) {
+    return [...baseKeys, ...ML_EXTRA_PARAMS];
+  }
+  return baseKeys;
 }
 
 interface Props {

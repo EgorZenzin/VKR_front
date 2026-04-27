@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type {
   TaskInfo,
+  AlgorithmInfo,
   SolveRequest,
   SolveResponse,
   CompareRequest,
@@ -15,10 +16,19 @@ const api = axios.create({
 export const getTasks = () =>
   api.get<TaskInfo[]>('/tasks').then((r) => r.data);
 
-export const solve = (data: SolveRequest) =>
+export const getTaskAlgorithms = (taskName: string) =>
+  api
+    .get<AlgorithmInfo[]>(`/tasks/${encodeURIComponent(taskName)}/algorithms`)
+    .then((r) => r.data);
+
+export const solveTask = (data: SolveRequest) =>
   api.post<SolveResponse>('/solve', data).then((r) => r.data);
 
-export const compare = (data: CompareRequest) =>
+export const compareTasks = (data: CompareRequest) =>
   api.post<CompareResponse>('/compare', data).then((r) => r.data);
+
+// Backwards-compatible aliases
+export const solve = solveTask;
+export const compare = compareTasks;
 
 export default api;

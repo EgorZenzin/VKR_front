@@ -25,11 +25,11 @@ export default function TspChart({ data }: Props) {
   return (
     <ResponsiveContainer width="100%" height={350}>
       <ScatterChart>
-        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-        <XAxis dataKey="x" type="number" name="X" stroke="#94a3b8" />
-        <YAxis dataKey="y" type="number" name="Y" stroke="#94a3b8" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+        <XAxis dataKey="x" type="number" name="X" stroke="#64748b" />
+        <YAxis dataKey="y" type="number" name="Y" stroke="#64748b" />
         <Tooltip
-          contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 8 }}
+          contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8, color: '#1e293b' }}
           cursor={{ strokeDasharray: '3 3' }}
         />
         <Scatter
