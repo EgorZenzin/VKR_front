@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   deleteCompareHistory,
   deleteSolveHistory,
@@ -59,6 +60,7 @@ function TabButton({
 /* ───── Solve list ───── */
 
 function SolveHistoryList() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<SolveHistoryOut[]>([]);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -84,14 +86,19 @@ function SolveHistoryList() {
     void load(0);
   }, [load]);
 
-  const onDelete = async (id: number) => {
+  const onDelete = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!confirm('Удалить запись?')) return;
     try {
       await deleteSolveHistory(id);
       setItems((prev) => prev.filter((x) => x.id !== id));
-    } catch (e) {
-      alert(extractErrorMessage(e));
+    } catch (err) {
+      alert(extractErrorMessage(err));
     }
+  };
+
+  const openDetail = (it: SolveHistoryOut) => {
+    navigate(`/history/solve/${it.id}`, { state: { record: it } });
   };
 
   return (
@@ -112,7 +119,11 @@ function SolveHistoryList() {
           </thead>
           <tbody>
             {items.map((it) => (
-              <tr key={it.id} className="border-t border-slate-700 hover:bg-slate-800/50">
+              <tr
+                key={it.id}
+                onClick={() => openDetail(it)}
+                className="border-t border-slate-700 hover:bg-slate-800/50 cursor-pointer"
+              >
                 <Td>{it.id}</Td>
                 <Td>{it.task_name}</Td>
                 <Td>{it.algorithm}</Td>
@@ -121,7 +132,7 @@ function SolveHistoryList() {
                 <Td>{new Date(it.created_at).toLocaleString()}</Td>
                 <Td>
                   <button
-                    onClick={() => onDelete(it.id)}
+                    onClick={(e) => onDelete(it.id, e)}
                     className="text-red-400 hover:text-red-300 text-xs"
                   >
                     удалить
@@ -154,6 +165,7 @@ function SolveHistoryList() {
 /* ───── Compare list ───── */
 
 function CompareHistoryList() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<ComparisonHistoryOut[]>([]);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
@@ -179,14 +191,19 @@ function CompareHistoryList() {
     void load(0);
   }, [load]);
 
-  const onDelete = async (id: number) => {
+  const onDelete = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!confirm('Удалить запись?')) return;
     try {
       await deleteCompareHistory(id);
       setItems((prev) => prev.filter((x) => x.id !== id));
-    } catch (e) {
-      alert(extractErrorMessage(e));
+    } catch (err) {
+      alert(extractErrorMessage(err));
     }
+  };
+
+  const openDetail = (it: ComparisonHistoryOut) => {
+    navigate(`/history/compare/${it.id}`, { state: { record: it } });
   };
 
   return (
@@ -206,7 +223,11 @@ function CompareHistoryList() {
           </thead>
           <tbody>
             {items.map((it) => (
-              <tr key={it.id} className="border-t border-slate-700 hover:bg-slate-800/50">
+              <tr
+                key={it.id}
+                onClick={() => openDetail(it)}
+                className="border-t border-slate-700 hover:bg-slate-800/50 cursor-pointer"
+              >
                 <Td>{it.id}</Td>
                 <Td>{it.task_name}</Td>
                 <Td>{it.algorithms.join(', ')}</Td>
@@ -214,7 +235,7 @@ function CompareHistoryList() {
                 <Td>{new Date(it.created_at).toLocaleString()}</Td>
                 <Td>
                   <button
-                    onClick={() => onDelete(it.id)}
+                    onClick={(e) => onDelete(it.id, e)}
                     className="text-red-400 hover:text-red-300 text-xs"
                   >
                     удалить

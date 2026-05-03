@@ -8,6 +8,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import HistoryPage from './pages/HistoryPage';
+import HistorySolveDetailPage from './pages/HistorySolveDetailPage';
+import HistoryCompareDetailPage from './pages/HistoryCompareDetailPage';
 import ProtectedRoute from './auth/ProtectedRoute';
 
 export default function App() {
@@ -34,6 +36,22 @@ export default function App() {
           element={
             <ProtectedRoute>
               <HistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history/solve/:id"
+          element={
+            <ProtectedRoute>
+              <HistorySolveDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history/compare/:id"
+          element={
+            <ProtectedRoute>
+              <HistoryCompareDetailPage />
             </ProtectedRoute>
           }
         />
