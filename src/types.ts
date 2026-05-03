@@ -105,3 +105,42 @@ export interface CompareResponse {
   results: AlgorithmResultResponse[];
   comparison_charts: ComparisonCharts;
 }
+
+/* ───── Auth / History ───── */
+
+export interface TokenPair {
+  access_token: string;
+  refresh_token: string;
+  token_type: 'bearer';
+}
+
+export interface User {
+  id: number;
+  email: string;
+  username: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface SolveHistoryOut {
+  id: number;
+  task_name: string;
+  algorithm: string;
+  input_data: Record<string, unknown>;
+  params: Record<string, unknown> | null;
+  result: Record<string, unknown>;
+  objective_value: number | null;
+  elapsed_ms: number | null;
+  created_at: string;
+}
+
+export interface ComparisonHistoryOut {
+  id: number;
+  task_name: string;
+  algorithms: string[];
+  input_data: Record<string, unknown>;
+  params: Record<string, unknown> | null;
+  result: Record<string, unknown>;
+  algorithms_count: number;
+  created_at: string;
+}

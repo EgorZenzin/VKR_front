@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import { useTasks } from '../hooks/useTasks';
+import { useAuth } from '../auth/AuthContext';
 import Loader from './Loader';
 
 export default function Layout() {
   const { tasks, loading } = useTasks();
+  const { user, isAuthenticated, logout } = useAuth();
   const [solveOpen, setSolveOpen] = useState(true);
   const [compareOpen, setCompareOpen] = useState(true);
   const navigate = useNavigate();
@@ -15,6 +17,11 @@ export default function Layout() {
         ? 'bg-blue-600 text-white'
         : 'text-slate-300 hover:bg-slate-700 hover:text-white'
     }`;
+
+  const onLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -87,12 +94,51 @@ export default function Layout() {
           >
             🧠 ML обзор
           </NavLink>
+
+          {isAuthenticated && (
+            <NavLink to="/history" className={({ isActive }) => link(isActive)}>
+              📜 История
+            </NavLink>
+          )}
         </nav>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto p-6">
-        {loading ? <Loader /> : <Outlet />}
+      <main className="flex-1 overflow-auto flex flex-col">
+        <header className="flex items-center justify-end gap-3 px-6 py-3 border-b border-slate-800 bg-slate-950/40 text-sm">
+          {isAuthenticated && user ? (
+            <>
+              <Link
+                to="/profile"
+                className="text-slate-300 hover:text-white"
+                title="Профиль"
+              >
+                👤 {user.username}
+              </Link>
+              <button
+                onClick={onLogout}
+                className="rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 px-3 py-1 text-slate-200"
+              >
+                Выйти
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="text-slate-300 hover:text-white">
+                Войти
+              </Link>
+              <Link
+                to="/register"
+                className="rounded bg-blue-600 hover:bg-blue-500 px-3 py-1 text-white"
+              >
+                Регистрация
+              </Link>
+            </>
+          )}
+        </header>
+        <div className="flex-1 p-6">
+          {loading ? <Loader /> : <Outlet />}
+        </div>
       </main>
     </div>
   );

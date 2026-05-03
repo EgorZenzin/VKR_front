@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './client';
 import type {
   TaskInfo,
   AlgorithmInfo,
@@ -8,10 +8,9 @@ import type {
   CompareResponse,
 } from '../types';
 
-const api = axios.create({
-  baseURL: '/api',
-  timeout: 120_000,
-});
+export * from './client';
+export * from './auth';
+export * from './history';
 
 export const getTasks = () =>
   api.get<TaskInfo[]>('/tasks').then((r) => r.data);
