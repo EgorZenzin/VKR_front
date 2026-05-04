@@ -3,12 +3,6 @@ import { useTasks } from '../hooks/useTasks';
 import Loader from '../components/Loader';
 import { countMl, groupAlgorithms } from '../utils/algorithms';
 
-const TASK_ICONS: Record<string, string> = {
-  tsp: '🗺️',
-  knapsack: '🎒',
-  assignment: '📋',
-};
-
 export default function HomePage() {
   const { tasks, loading } = useTasks();
   const navigate = useNavigate();
@@ -30,11 +24,6 @@ export default function HomePage() {
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Hero */}
       <div className="bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700 rounded-xl p-6">
-        <div className="flex items-center gap-2 text-xs text-violet-300 mb-2">
-          <span className="px-2 py-0.5 rounded bg-violet-600/20 border border-violet-600/40">
-            ВКР · Исследовательский стенд
-          </span>
-        </div>
         <h1 className="text-3xl font-bold">Комбинаторная оптимизация</h1>
         <p className="text-slate-300 mt-2 max-w-3xl">
           Сравнение классических, точных и эвристических алгоритмов с их{' '}
@@ -63,7 +52,6 @@ export default function HomePage() {
       {/* Что исследуется + Что оценивается */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InfoCard
-          icon="🎯"
           title="Цель системы"
           items={[
             'Сравнить классические алгоритмы с ML-усиленными аналогами на одних и тех же входных данных.',
@@ -72,7 +60,6 @@ export default function HomePage() {
           ]}
         />
         <InfoCard
-          icon="📐"
           title="Что оценивается"
           items={[
             'Время выполнения и относительное ускорение base → base_ml.',
@@ -81,36 +68,6 @@ export default function HomePage() {
             'ML-метрики: точные / суррогатные оценки, R², доля суррогата, обучающие сэмплы.',
           ]}
         />
-      </div>
-
-      {/* Поддерживаемые классы алгоритмов */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-        <h2 className="text-lg font-semibold mb-1">
-          Поддерживаемые классы алгоритмов
-        </h2>
-        <p className="text-xs text-slate-500 mb-4">
-          Список формируется по данным API, а не по локальным константам.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <ClassCard
-            color="emerald"
-            title="Точные"
-            subtitle="гарантируют глобальный оптимум"
-            names={exactNames}
-          />
-          <ClassCard
-            color="blue"
-            title="Эвристические"
-            subtitle="быстрые, без гарантии оптимальности"
-            names={heuristicNames}
-          />
-          <ClassCard
-            color="violet"
-            title="ML-усиленные"
-            subtitle="с суррогатной моделью (суффикс _ml)"
-            names={mlBaseNames.map((n) => `${n}_ml`)}
-          />
-        </div>
       </div>
 
       {/* Task cards */}
@@ -125,7 +82,6 @@ export default function HomePage() {
                 key={t.name}
                 className="bg-slate-800 rounded-xl p-6 border border-slate-700 hover:border-slate-500 transition-colors"
               >
-                <div className="text-4xl mb-3">{TASK_ICONS[t.name] || '🔧'}</div>
                 <h3 className="text-lg font-semibold mb-1">{t.display_name}</h3>
                 <p className="text-sm text-slate-400 mb-4 leading-relaxed">
                   {t.description}
@@ -163,7 +119,7 @@ export default function HomePage() {
 
       {/* ML comparison quick access */}
       <div className="bg-gradient-to-r from-violet-900/30 to-blue-900/30 border border-violet-700/30 rounded-xl p-6">
-        <h2 className="text-xl font-bold mb-2">🧠 ML vs Классика</h2>
+        <h2 className="text-xl font-bold mb-2">ML vs Классика</h2>
         <p className="text-sm text-slate-400 mb-4">
           Быстро сравните классические алгоритмы с их ML-усиленными вариантами.
           Алгоритмы с суффиксом{' '}
@@ -179,7 +135,7 @@ export default function HomePage() {
                 onClick={() => navigate(`/compare/${t.name}?preset=ml`)}
                 className="px-4 py-2 text-sm rounded-lg bg-violet-600 hover:bg-violet-700 text-white transition-colors"
               >
-                {TASK_ICONS[t.name]} {t.display_name}: ML vs Без ML
+                {t.display_name}: ML vs Без ML
               </button>
             ))}
           <button
@@ -214,20 +170,15 @@ function Stat({
 }
 
 function InfoCard({
-  icon,
   title,
   items,
 }: {
-  icon: string;
   title: string;
   items: string[];
 }) {
   return (
     <div className="bg-slate-800 rounded-xl p-5 border border-slate-700">
-      <h3 className="text-base font-semibold mb-3">
-        <span className="mr-2">{icon}</span>
-        {title}
-      </h3>
+      <h3 className="text-base font-semibold mb-3">{title}</h3>
       <ul className="space-y-1.5 text-sm text-slate-300">
         {items.map((t, i) => (
           <li key={i} className="flex gap-2">
