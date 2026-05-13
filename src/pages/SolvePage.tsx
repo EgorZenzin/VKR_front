@@ -17,12 +17,14 @@ import KnapsackChart from '../components/charts/KnapsackChart';
 import AssignmentVisualization from '../components/charts/AssignmentVisualization';
 import { generateCities, generateKnapsackItems, generateCostMatrix } from '../utils/generators';
 import { isMlAlgorithm } from '../utils/algorithms';
+import TaskInfoModal from '../components/TaskInfoModal';
 
 export default function SolvePage() {
   const { taskName } = useParams<{ taskName: string }>();
   const { getTask, loading: tasksLoading } = useTasks();
   const task = getTask(taskName || '');
 
+  const [showInfo, setShowInfo] = useState(false);
   const [algorithm, setAlgorithm] = useState('');
   const [params, setParams] = useState<Record<string, number>>({});
   const [result, setResult] = useState<SolveResponse | null>(null);
@@ -97,11 +99,22 @@ export default function SolvePage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">{task.display_name}</h1>
-        {task.description && (
-          <p className="text-slate-400 mt-1">{task.description}</p>
-        )}
+      {showInfo && taskName && (
+        <TaskInfoModal taskName={taskName} onClose={() => setShowInfo(false)} />
+      )}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{task.display_name}</h1>
+          {task.description && (
+            <p className="text-slate-400 mt-1">{task.description}</p>
+          )}
+        </div>
+        <button
+          onClick={() => setShowInfo(true)}
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:text-white hover:border-blue-500 hover:bg-slate-800 transition-colors text-sm"
+        >
+          <span>ℹ</span> О задаче
+        </button>
       </div>
 
       {/* Algorithm select */}
